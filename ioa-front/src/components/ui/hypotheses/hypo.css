@@ -1,0 +1,33 @@
+.hypotheses-container {
+   width: 95%;
+    margin: 20px auto;
+    text-align: center;
+    margin-bottom: 40px;
+
+  }
+  
+  .hypotheses-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem auto;
+    margin-top: 30px;
+    font-size: 14px;
+  }
+  
+  .hypotheses-table th,
+  .hypotheses-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: justify;
+  }
+  
+  
+  .hypotheses-table th {
+    background-color: #adacac;
+    font-weight: bold;
+  }
+  
+  .hypotheses-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
