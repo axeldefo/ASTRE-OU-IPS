@@ -4,19 +4,19 @@ const Papa = require('papaparse');
 
 // Noms de colonnes à utiliser pour les conditions
 const rowNames = {
-  0: 'NumEtu',
-  1: '18. Quel(s) système(s) d’exploitation utilises-tu ?',
-  2: '11. Es-tu plutôt : (plusieurs choix possibles)',
+  0: 'Numero etudiant',
+  1: '18. Quel(s) système(s) d’exploitation utilises-tu ? ',
+  2: '11. Es-tu plutôt : (3 choix maximum) ',
   3: '17. Qu’est-ce que tu as sur ton bureau ?',
-  4: '12. Quels sont les langages informatiques que tu connais ?',
+  4: '12. Quels sont les langages informatiques que tu as pratiqué? ',
   5: '8. Quelles étaient tes spécialités (Quel BTS, BUT, Prépa) ? ',
-  6: '7. Quelles sont ta/tes formation(s) antérieure(s) ?',
+  6: '7. Quelle(s) est/sont ta/tes formation(s) antérieure(s) ? ',
   7: '21. Envisagez vous un travail sans code/programmation plus tard ?',
   8: '5. Quelle(s) association(s) et/ou événement(s) t’intéressent ?',
   9: '4. Qu’est-ce qui te motive à venir en cours ?',
-  10: '6. Quelles spécialités as-tu prises au BAC ?',
+  10: '6. Quelles spécialités as-tu prises au BAC ? ',
   11: '19. À quelle fréquence codes-tu pour des projets personnels ?',
-  12: '20. Quelles activités te passionnent le plus?',
+  12: '20. Quelles activités te passionnent le plus? (3 choix maximum) ',
   13: '10. Dans la liste d’entreprise ci-dessous, lesquelles pourraient t’intéresser ? '
 };
 
@@ -27,7 +27,8 @@ function checkIpsCondition1(row) {
     (row[rowNames[9]].includes("Les copains") || row[rowNames[9]].includes("La Kfet") || row[rowNames[9]].includes("Pas le choix") || row[rowNames[9]].includes("L'obtention du diplôme")) &&
     !row[rowNames[9]].includes("Les TP") &&
     !row[rowNames[9]].includes("Les profs") &&
-    !row[rowNames[13]].includes("lectr") 
+    !row[rowNames[13]].includes("lectr") &&
+    row[rowNames[11]].includes("Jamais")
   );
 }
 
@@ -79,7 +80,7 @@ function checkAstreCondition2(row) {
 function checkAstreCondition3(row) {
   return (
     row[rowNames[8]].includes("EnsimElec") &&
-    (row[rowNames[12]].includes("Bricolage") || row[rowNames[11]].includes("Plusieurs fois par semaine") || row[rowNames[3]].includes("Carte electronique"))
+    (row[rowNames[12]].includes("Bricolage") || row[rowNames[11]].includes("Plusieurs fois par semaine") || row[rowNames[3]].includes("Arduino/Raspberry Pi"))
   );
 }
 
@@ -149,19 +150,15 @@ function determineSpecialization(row, weightsIPS, importanceIPS, weightsAstre, i
 
 // calcul des scores et détermination de la spécialisation
 // calcul des scores et détermination de la spécialisation
-async function processCsvDataValidateur(req, res) {
-  const { weightsIPS, importanceIPS, weightsAstre, importanceAstre, wichCsv } = req.body;
+async function processCsvData(req, res) {
+  const { weightsIPS, importanceIPS, weightsAstre, importanceAstre } = req.body;
   
   // Determine the CSV file path
-  const csvPath = wichCsv === "new"
-    ? path.join(__dirname, '../uploads/new.csv')
-    : path.join(__dirname, '../uploads/Réponses.csv');
+  const csvPath = path.join(__dirname, '../uploads/etudiants_3A.csv');
 
-  console.log("File path: ", csvPath);
 
   // Verify that weights and importance are defined
   if (!weightsIPS || !importanceIPS || !weightsAstre || !importanceAstre) {
-    console.log("Missing parameters in the request.");
     return res.status(400).json({ message: 'Missing parameters in the request.' });
   }
 
@@ -180,10 +177,8 @@ async function processCsvDataValidateur(req, res) {
       skipEmptyLines: true,
       complete: (results) => {
         results.data.forEach((row) => {
-
-          console.log (row)
           // Safely extract the student number, ensure it's not undefined or null
-          const studentNumber = row['NumEtu'] ;
+          const studentNumber = row['Numero etudiant '] ;
 
           // Calculate scores
           const { scoreIps, scoreAstre } = calculateScore(row, weightsIPS, importanceIPS, weightsAstre, importanceAstre);
@@ -211,4 +206,4 @@ async function processCsvDataValidateur(req, res) {
   });
 }
 
-module.exports = { processCsvDataValidateur };
+module.exports = { processCsvData };

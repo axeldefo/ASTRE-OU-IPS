@@ -6,6 +6,7 @@ import exportData from 'highcharts/modules/export-data';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import HypothesesTable from './components/ui/hypotheses/hypo';
+
 import './App.css';
 
 // Charger les modules supplémentaires
@@ -26,27 +27,44 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    // Fonction pour obtenir une couleur bleue en fonction du score ASTRE
-    const getAstreColor = (scoreAstre) => {
-      const intensity = Math.min(255, 100 + scoreAstre * 3); // 100 à 255 (plus foncé avec un score élevé)
-      return `rgb(0, 0, ${intensity})`; // Bleu
-    };
 
-    // Fonction pour obtenir une couleur verte en fonction du score IPS
-    const getIpsColor = (scoreIps) => {
-      const intensity = Math.min(255, 100 + scoreIps * 3); // 100 à 255 (plus foncé avec un score élevé)
-      return `rgb(0, ${intensity}, 0)`; // Vert
-    };
+    // Créer un tableau pour suivre les coordonnées (x, y) déjà utilisées
+    const usedCoordinates = [];
 
     // Préparer les données pour Highcharts
-    const chartData = predictData.map(student => ({
-      name: student.studentNumber,
-      x: student.scoreAstre, // Position sur l'axe X
-      y: student.scoreIps,   // Position sur l'axe Y
-      z: Math.max(student.scoreIps, student.scoreAstre), // Taille de la bulle (basée sur la spécialisation dominante)
-      specialization: student.specialization,
-      color: student.specialization === 'ASTRE' ? getAstreColor(student.scoreAstre - student.scoreIps) : getIpsColor(student.scoreIps - student.scoreAstre)
-    }));
+    const chartData = predictData.map(student => {
+      // Initialiser les coordonnées (x, y) avant le décalage
+      let x = student.scoreAstre;
+      let y = student.scoreIps;
+
+      // Vérifier si ces coordonnées sont déjà utilisées
+      const isDuplicate = usedCoordinates.some(coord => coord.x === x && coord.y === y);
+
+      // Appliquer un décalage aléatoire si un doublon est trouvé
+      if (isDuplicate) {
+        const randomOffsetX = (Math.random() - 0.4) * 3; // Décalage aléatoire sur l'axe X
+        const randomOffsetY = (Math.random() - 0.4) * 3; // Décalage aléatoire sur l'axe Y
+        x += randomOffsetX; // Appliquer le décalage X
+        y += randomOffsetY; // Appliquer le décalage Y
+      }
+
+      // Ajouter les coordonnées actuelles dans le tableau des coordonnées utilisées
+      usedCoordinates.push({ x, y });
+
+      return {
+        name: student.studentNumber,
+        x: x, // Utiliser les coordonnées X avec ou sans décalage
+        y: y, // Utiliser les coordonnées Y avec ou sans décalage
+        z: Math.max(student.scoreIps, student.scoreAstre), // Taille de la bulle (basée sur la spécialisation dominante)
+        vraiScoreAstre: student.scoreAstre,
+        vraiScoreIps: student.scoreIps,
+        specialization: student.specialization,
+        color: student.specialization === 'ASTRE' ? "rgba(139, 0, 0, 0.5)" : "rgba(0, 0, 255, 0.5)"
+      };
+    });
+
+
+
 
     // Initialiser le graphique Highcharts
     Highcharts.chart('container', {
@@ -55,7 +73,10 @@ const App = () => {
         plotBorderWidth: 1,
         zooming: {
           type: 'xy'
-        }
+        },
+      },
+      legend: {
+        enabled: false
       },
       title: {
         text: 'Prédiction des choix des étudiants (IPS et ASTRE)'
@@ -69,14 +90,14 @@ const App = () => {
       yAxis: {
         title: {
           text: 'Score IPS'
-        }
+        },
       },
       tooltip: {
         useHTML: true,
         headerFormat: '<table>',
         pointFormat: '<tr><th>Numéro Étudiant:</th><td>{point.name}</td></tr>' +
-          '<tr><th>Score ASTRE:</th><td>{point.x}</td></tr>' +
-          '<tr><th>Score IPS:</th><td>{point.y}</td></tr>' +
+          '<tr><th>Score ASTRE:</th><td>{point.vraiScoreAstre}</td></tr>' +
+          '<tr><th>Score IPS:</th><td>{point.vraiScoreIps}</td></tr>' +
           '<tr><th>Spécialisation:</th><td>{point.specialization}</td></tr>',
         footerFormat: '</table>',
         followPointer: true
@@ -100,30 +121,33 @@ const App = () => {
         },
         // Configuration de la table des données
         csv: {
-           columnHeaderFormatter: function (item, key) {
-              if (key === 'x') {
-                return 'Score ASTRE'; // Renomme la colonne x
-              }
-              if (key === 'y') {
-                return 'Score IPS'; // Renomme la colonne y
-              }
-              if (key === 'name') {
-                return 'Numéro Étudiant'; // Renomme la colonne name
-              }
-              if (key === 'specialization') {
-                return 'Spécialisation'; // Ajoute la spécialisation dans l'export
-              }
-              return false; // Ignore toutes les autres colonnes (par exemple, la colonne sans header)
+          columnHeaderFormatter: function (item, key) {
+            if (key === 'x') {
+              return 'Score ASTRE'; // Renomme la colonne x
             }
-          
+            if (key === 'y') {
+              return 'Score IPS'; // Renomme la colonne y
+            }
+            if (key === 'name') {
+              return 'Numéro Étudiant'; // Renomme la colonne name
+            }
+            if (key === 'specialization') {
+              return 'Spécialisation'; // Ajoute la spécialisation dans l'export
+            }
+            return false; // Ignore toutes les autres colonnes (par exemple, la colonne sans header)
+          }
+
         }
       },
       series: [{
         data: chartData,
-        keys: ['name', 'x', 'y', 'specialization']
+        keys: ['name', 'x', 'y', 'z', 'specialization'],
+        maxSize: '12%',
       }]
+
     });
   }, [predictData]);
+
 
   const handlePredict = async () => {
     // Appel à l'API pour prédire les résultats
@@ -137,7 +161,6 @@ const App = () => {
         importanceIPS,
         weightsAstre,
         importanceAstre,
-        wichCsv: 'default' // changez selon vos besoins
       }),
     });
 
@@ -167,7 +190,6 @@ const App = () => {
         importanceIPS,
         weightsAstre,
         importanceAstre,
-        wichCsv: 'default' // changez selon vos besoins
       }),
     });
 
@@ -314,7 +336,7 @@ const App = () => {
       </form>
 
       <figure className="highcharts-figure">
-        <div id="container" style={{ height: '600px', width: '900px', margin: '0 auto', alignItems: 'center', paddingRight: '13%' }}></div>
+        <div id="container" style={{ height: '700px', width: '100%', margin: '0 auto', alignItems: 'center', paddingRight: '13%' }}></div>
       </figure>
     </div>
   );
