@@ -28,124 +28,124 @@ const App = () => {
 
   useEffect(() => {
 
-    // Créer un tableau pour suivre les coordonnées (x, y) déjà utilisées
-    const usedCoordinates = [];
+    // Function to add a random offset if coordinates are duplicated
+function addOffsetIfDuplicate(data) {
+  const usedCoordinates = []; // Array to track used coordinates
 
-    // Préparer les données pour Highcharts
-    const chartData = predictData.map(student => {
-      // Initialiser les coordonnées (x, y) avant le décalage
-      let x = student.scoreAstre;
-      let y = student.scoreIps;
+  return data.map(student => {
+    let x = student.scoreAstre;
+    let y = student.scoreIps;
 
-      // Vérifier si ces coordonnées sont déjà utilisées
-      const isDuplicate = usedCoordinates.some(coord => coord.x === x && coord.y === y);
+    // Check if coordinates are already used
+    const isDuplicate = usedCoordinates.some(coord => coord.x === x && coord.y === y);
 
-      // Appliquer un décalage aléatoire si un doublon est trouvé
-      if (isDuplicate) {
-        const randomOffsetX = (Math.random() - 0.4) * 3; // Décalage aléatoire sur l'axe X
-        const randomOffsetY = (Math.random() - 0.4) * 3; // Décalage aléatoire sur l'axe Y
-        x += randomOffsetX; // Appliquer le décalage X
-        y += randomOffsetY; // Appliquer le décalage Y
-      }
+    // Apply random offset if duplicate
+    if (isDuplicate) {
+      const randomOffsetX = (Math.random() - 0.4) * 3; // X-axis random offset
+      const randomOffsetY = (Math.random() - 0.4) * 3; // Y-axis random offset
+      x += randomOffsetX;
+      y += randomOffsetY;
+    }
 
-      // Ajouter les coordonnées actuelles dans le tableau des coordonnées utilisées
-      usedCoordinates.push({ x, y });
+    // Store current coordinates
+    usedCoordinates.push({ x, y });
 
-      return {
-        name: student.studentNumber,
-        x: x, // Utiliser les coordonnées X avec ou sans décalage
-        y: y, // Utiliser les coordonnées Y avec ou sans décalage
-        z: Math.max(student.scoreIps, student.scoreAstre), // Taille de la bulle (basée sur la spécialisation dominante)
-        vraiScoreAstre: student.scoreAstre,
-        vraiScoreIps: student.scoreIps,
-        specialization: student.specialization,
-        color: student.specialization === 'ASTRE' ? "rgba(139, 0, 0, 0.5)" : "rgba(0, 0, 255, 0.5)"
-      };
-    });
+    return {
+      name: student.studentNumber,
+      x: x,
+      y: y,
+      z: Math.max(student.scoreIps, student.scoreAstre),
+      vraiScoreAstre: student.scoreAstre,
+      vraiScoreIps: student.scoreIps,
+      specialization: student.specialization,
+      color: student.specialization === 'ASTRE' ? "rgba(139, 0, 0, 0.5)" : "rgba(0, 0, 255, 0.5)"
+    };
+  });
+}
 
+// Apply the offset logic to ASTRE and IPS data separately
+const chartDataAstre = addOffsetIfDuplicate(
+  predictData.filter(student => student.specialization === 'ASTRE')
+);
 
+const chartDataIps = addOffsetIfDuplicate(
+  predictData.filter(student => student.specialization === 'IPS')
+);
 
-
-    // Initialiser le graphique Highcharts
-    Highcharts.chart('container', {
-      chart: {
-        type: 'bubble',
-        plotBorderWidth: 1,
-        zooming: {
-          type: 'xy'
-        },
+  
+  // Initialize the Highcharts chart
+  Highcharts.chart('container', {
+    chart: {
+      type: 'bubble',
+      plotBorderWidth: 1,
+      zooming: {
+        type: 'xy'
       },
-      legend: {
-        enabled: false
-      },
+    },
+    title: {
+      text: 'Prédiction des choix des étudiants (IPS et ASTRE)'
+    },
+    xAxis: {
       title: {
-        text: 'Prédiction des choix des étudiants (IPS et ASTRE)'
+        text: 'Score ASTRE'
       },
-      xAxis: {
-        title: {
-          text: 'Score ASTRE'
-        },
-        gridLineWidth: 1
+      gridLineWidth: 1
+    },
+    yAxis: {
+      title: {
+        text: 'Score IPS'
       },
-      yAxis: {
-        title: {
-          text: 'Score IPS'
-        },
-      },
-      tooltip: {
-        useHTML: true,
-        headerFormat: '<table>',
-        pointFormat: '<tr><th>Numéro Étudiant:</th><td>{point.name}</td></tr>' +
-          '<tr><th>Score ASTRE:</th><td>{point.vraiScoreAstre}</td></tr>' +
-          '<tr><th>Score IPS:</th><td>{point.vraiScoreIps}</td></tr>' +
-          '<tr><th>Spécialisation:</th><td>{point.specialization}</td></tr>',
-        footerFormat: '</table>',
-        followPointer: true
-      },
-      exporting: {
-        buttons: {
-          contextButton: {
-            menuItems: [
-              'viewFullscreen',
-              'separator',
-              'downloadPNG',
-              'downloadJPEG',
-              'downloadPDF',
-              'downloadSVG',
-              'separator',
-              'downloadCSV',
-              'downloadXLS',
-              'viewData'
-            ]
-          }
-        },
-        // Configuration de la table des données
-        csv: {
-          columnHeaderFormatter: function (item, key) {
-            if (key === 'x') {
-              return 'Score ASTRE'; // Renomme la colonne x
-            }
-            if (key === 'y') {
-              return 'Score IPS'; // Renomme la colonne y
-            }
-            if (key === 'name') {
-              return 'Numéro Étudiant'; // Renomme la colonne name
-            }
-            if (key === 'specialization') {
-              return 'Spécialisation'; // Ajoute la spécialisation dans l'export
-            }
-            return false; // Ignore toutes les autres colonnes (par exemple, la colonne sans header)
-          }
-
+    },
+    tooltip: {
+      useHTML: true,
+      headerFormat: '<table>',
+      pointFormat: '<tr><th>Numéro Étudiant:</th><td>{point.name}</td></tr>' +
+        '<tr><th>Score ASTRE:</th><td>{point.vraiScoreAstre}</td></tr>' +
+        '<tr><th>Score IPS:</th><td>{point.vraiScoreIps}</td></tr>' +
+        '<tr><th>Spécialisation:</th><td>{point.specialization}</td></tr>',
+      footerFormat: '</table>',
+      followPointer: true
+    },
+    exporting: {
+      buttons: {
+        contextButton: {
+          menuItems: [
+            'viewFullscreen',
+            'separator',
+            'downloadPNG',
+            'downloadJPEG',
+            'downloadPDF',
+            'downloadSVG',
+            'separator',
+            'downloadCSV',
+            'downloadXLS',
+            'viewData'
+          ]
         }
       },
-      series: [{
-        data: chartData,
-        keys: ['name', 'x', 'y', 'z', 'specialization'],
+    },
+    legend: {
+      enabled: true,
+      layout: 'horizontal',
+      align: 'center',
+      verticalAlign: 'bottom',
+    },
+    series: [
+      {
+        name: 'IPS',  // Series for IPS students
+        data: chartDataIps,
         maxSize: '12%',
-      }]
-
-    });
+        color: "rgba(0, 0, 255, 0.5)", // Blue color for IPS
+      },
+      {
+        name: 'ASTRE',  // Series for ASTRE students
+        data: chartDataAstre,
+        maxSize: '12%',
+        color: "rgba(139, 0, 0, 0.5)", // Red color for ASTRE
+      }
+    ],
+  });
+  
   }, [predictData]);
 
 

@@ -149,7 +149,6 @@ function determineSpecialization(row, weightsIPS, importanceIPS, weightsAstre, i
 }
 
 // calcul des scores et détermination de la spécialisation
-// calcul des scores et détermination de la spécialisation
 async function processCsvData(req, res) {
   const { weightsIPS, importanceIPS, weightsAstre, importanceAstre } = req.body;
   
